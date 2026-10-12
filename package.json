@@ -1,0 +1,29 @@
+{
+  "name": "@dishonesthero/kite-agent-zk-reputation",
+  "version": "1.0.0",
+  "description": "Zero-Knowledge AI Agent Reputation Attestation & x402 Credit-Based Micropayment Protocol on Kite Chain",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "node --test dist/test/*.js"
+  },
+  "keywords": [
+    "kite-ai",
+    "zk-proofs",
+    "reputation",
+    "x402",
+    "ai-agent",
+    "solidity",
+    "web3"
+  ],
+  "author": "dishonesthero <dishonesthero@users.noreply.github.com>",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "ethers": "^6.13.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.4.5"
+  }
+}
