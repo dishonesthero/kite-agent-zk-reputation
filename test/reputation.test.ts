@@ -37,3 +37,16 @@ describe("Credit Decay Manager Suite", () => {
     assert.strictEqual(floorScore, 600n);
   });
 });
+import { TierRiskEvaluator, CreditTier } from "../src/index";
+
+describe("Tier Risk Evaluator Suite", () => {
+  it("should categorize scores into corresponding risk policies", () => {
+    const plat = TierRiskEvaluator.evaluatePolicy(980n);
+    assert.strictEqual(plat.tier, CreditTier.Platinum);
+    assert.strictEqual(plat.streamingFeeBps, 20);
+
+    const bronze = TierRiskEvaluator.evaluatePolicy(700n);
+    assert.strictEqual(bronze.tier, CreditTier.Bronze);
+    assert.strictEqual(bronze.maxCreditLineWei, 0n);
+  });
+});
