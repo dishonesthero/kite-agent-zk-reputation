@@ -21,3 +21,19 @@ describe("Kite Agent ZK Reputation Test Suite", () => {
     }, /Credit score out of valid bounds/);
   });
 });
+import { CreditDecayManager } from "../src/index";
+
+describe("Credit Decay Manager Suite", () => {
+  it("should calculate progressive score decay and enforce minimum floor", () => {
+    const manager = new CreditDecayManager({ halfLifeEpochs: 180, inactivityPenaltyBps: 200 }); // 2% per 30 epochs
+    const originalScore = 900n;
+
+    // 60 epochs = 2 intervals = 4% reduction = 36 points reduction
+    const decayed = manager.calculateDecayedScore(originalScore, 60);
+    assert.strictEqual(decayed, 864n);
+
+    // Extreme epochs should floor at 600
+    const floorScore = manager.calculateDecayedScore(originalScore, 10000);
+    assert.strictEqual(floorScore, 600n);
+  });
+});
