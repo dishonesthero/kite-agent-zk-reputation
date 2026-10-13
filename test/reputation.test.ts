@@ -1,6 +1,16 @@
 import { describe, it } from "node:test";
 import assert from "node:assert";
-import { ProofGenerator, KiteAgentZKReputationClient } from "../src/index";
+import {
+  ProofGenerator,
+  KiteAgentZKReputationClient,
+  CreditDecayManager,
+  TierRiskEvaluator,
+  CreditTier,
+  ZKCircuitVerifierEngine,
+  SybilNullifierGuard,
+  CreditDefaultLiquidator,
+  BatchAttestationAggregator,
+} from "../src/index";
 
 describe("Kite Agent ZK Reputation Test Suite", () => {
   const generator = new ProofGenerator();
@@ -21,23 +31,18 @@ describe("Kite Agent ZK Reputation Test Suite", () => {
     }, /Credit score out of valid bounds/);
   });
 });
-import { CreditDecayManager } from "../src/index";
 
 describe("Credit Decay Manager Suite", () => {
   it("should calculate progressive score decay and enforce minimum floor", () => {
-    const manager = new CreditDecayManager({ halfLifeEpochs: 180, inactivityPenaltyBps: 200 }); // 2% per 30 epochs
+    const manager = new CreditDecayManager({ halfLifeEpochs: 180, inactivityPenaltyBps: 200 });
     const originalScore = 900n;
-
-    // 60 epochs = 2 intervals = 4% reduction = 36 points reduction
     const decayed = manager.calculateDecayedScore(originalScore, 60);
     assert.strictEqual(decayed, 864n);
 
-    // Extreme epochs should floor at 600
     const floorScore = manager.calculateDecayedScore(originalScore, 10000);
     assert.strictEqual(floorScore, 600n);
   });
 });
-import { TierRiskEvaluator, CreditTier } from "../src/index";
 
 describe("Tier Risk Evaluator Suite", () => {
   it("should categorize scores into corresponding risk policies", () => {
@@ -50,7 +55,6 @@ describe("Tier Risk Evaluator Suite", () => {
     assert.strictEqual(bronze.maxCreditLineWei, 0n);
   });
 });
-import { ZKCircuitVerifierEngine, SybilNullifierGuard } from "../src/index";
 
 describe("ZK Circuit Verifier & Sybil Guard Suite", () => {
   it("should validate public circuit inputs against threshold criteria", () => {
@@ -67,8 +71,8 @@ describe("ZK Circuit Verifier & Sybil Guard Suite", () => {
       agentAddress: "0x2222222222222222222222222222222222222222",
       nullifierHash: "0xhash2",
       reputationScoreThreshold: 800,
-      taskCountPassed: 20, // Low task count
-      accuracyBps: 9200,   // Low accuracy
+      taskCountPassed: 20,
+      accuracyBps: 9200,
     });
     assert.strictEqual(substandard, false);
   });
@@ -84,14 +88,13 @@ describe("ZK Circuit Verifier & Sybil Guard Suite", () => {
     }, /Sybil alert: Nullifier.*already in active use/);
   });
 });
-import { CreditDefaultLiquidator } from "../src/index";
 
 describe("Credit Default Liquidator Suite", () => {
   it("should trigger liquidation and calculate penalty when grace period expires", () => {
-    const liquidator = new CreditDefaultLiquidator(3600, 500); // 1 hour grace, 5% penalty
+    const liquidator = new CreditDefaultLiquidator(3600, 500);
     const pos = {
-      agentAddress: "0xagent_bad",
-      borrowedCreditWei: 1000000000000000000n, // 1 KITE
+      agentAddress: "0x1111111111111111111111111111111111111111",
+      borrowedCreditWei: 1000000000000000000n,
       collateralLockedWei: 500000000000000000n,
       lastPaymentTimestamp: 1000,
     };
@@ -99,6 +102,21 @@ describe("Credit Default Liquidator Suite", () => {
     assert.strictEqual(liquidator.assessLiquidation(pos, 2000).isLiquidatable, false);
     const liq = liquidator.assessLiquidation(pos, 5000);
     assert.strictEqual(liq.isLiquidatable, true);
-    assert.strictEqual(liq.penaltyAmountWei, 50000000000000000n); // 0.05 KITE
+    assert.strictEqual(liq.penaltyAmountWei, 50000000000000000n);
+  });
+});
+
+describe("Batch Attestation Aggregator Suite", () => {
+  it("should compute deterministic Merkle root for batch reputation leaves", () => {
+    const dummyHash = "0x0000000000000000000000000000000000000000000000000000000000000001";
+    const leaves = [
+      { agentAddress: "0x1111111111111111111111111111111111111111", nullifierHash: dummyHash, score: 800n },
+      { agentAddress: "0x2222222222222222222222222222222222222222", nullifierHash: dummyHash, score: 850n },
+      { agentAddress: "0x3333333333333333333333333333333333333333", nullifierHash: dummyHash, score: 900n },
+    ];
+    const root1 = BatchAttestationAggregator.computeMerkleRoot(leaves);
+    const root2 = BatchAttestationAggregator.computeMerkleRoot(leaves);
+    assert.strictEqual(root1, root2);
+    assert.strictEqual(root1.startsWith("0x"), true);
   });
 });
