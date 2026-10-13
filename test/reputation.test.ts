@@ -84,3 +84,21 @@ describe("ZK Circuit Verifier & Sybil Guard Suite", () => {
     }, /Sybil alert: Nullifier.*already in active use/);
   });
 });
+import { CreditDefaultLiquidator } from "../src/index";
+
+describe("Credit Default Liquidator Suite", () => {
+  it("should trigger liquidation and calculate penalty when grace period expires", () => {
+    const liquidator = new CreditDefaultLiquidator(3600, 500); // 1 hour grace, 5% penalty
+    const pos = {
+      agentAddress: "0xagent_bad",
+      borrowedCreditWei: 1000000000000000000n, // 1 KITE
+      collateralLockedWei: 500000000000000000n,
+      lastPaymentTimestamp: 1000,
+    };
+
+    assert.strictEqual(liquidator.assessLiquidation(pos, 2000).isLiquidatable, false);
+    const liq = liquidator.assessLiquidation(pos, 5000);
+    assert.strictEqual(liq.isLiquidatable, true);
+    assert.strictEqual(liq.penaltyAmountWei, 50000000000000000n); // 0.05 KITE
+  });
+});

@@ -4,3 +4,4 @@ export * from "./credit-decay-manager";
 export * from "./tier-risk-evaluator";
 export * from "./zk-circuit-verifier";
 export * from "./sybil-nullifier-guard";
+export * from "./credit-default-liquidator";
