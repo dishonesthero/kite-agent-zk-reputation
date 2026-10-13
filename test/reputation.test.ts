@@ -50,3 +50,37 @@ describe("Tier Risk Evaluator Suite", () => {
     assert.strictEqual(bronze.maxCreditLineWei, 0n);
   });
 });
+import { ZKCircuitVerifierEngine, SybilNullifierGuard } from "../src/index";
+
+describe("ZK Circuit Verifier & Sybil Guard Suite", () => {
+  it("should validate public circuit inputs against threshold criteria", () => {
+    const valid = ZKCircuitVerifierEngine.validatePublicInputs({
+      agentAddress: "0x1111111111111111111111111111111111111111",
+      nullifierHash: "0xhash",
+      reputationScoreThreshold: 800,
+      taskCountPassed: 60,
+      accuracyBps: 9700,
+    });
+    assert.strictEqual(valid, true);
+
+    const substandard = ZKCircuitVerifierEngine.validatePublicInputs({
+      agentAddress: "0x2222222222222222222222222222222222222222",
+      nullifierHash: "0xhash2",
+      reputationScoreThreshold: 800,
+      taskCountPassed: 20, // Low task count
+      accuracyBps: 9200,   // Low accuracy
+    });
+    assert.strictEqual(substandard, false);
+  });
+
+  it("should enforce single-use nullifiers and prevent Sybil re-registration", () => {
+    const guard = new SybilNullifierGuard(100n);
+    guard.registerNullifier("0xnullifier_test", "0xagentA", 1000n);
+
+    assert.strictEqual(guard.isNullifierActive("0xnullifier_test", 1050n), true);
+
+    assert.throws(() => {
+      guard.registerNullifier("0xnullifier_test", "0xagentB", 1050n);
+    }, /Sybil alert: Nullifier.*already in active use/);
+  });
+});
